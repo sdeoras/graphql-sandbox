@@ -2,6 +2,7 @@ package authenticator
 
 import (
 	"fmt"
+
 	"github.com/graphql-go/graphql"
 	"github.com/sdeoras/graphql/pkg/rest/mw/auth"
 	"go.uber.org/zap"

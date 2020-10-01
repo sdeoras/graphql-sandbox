@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/graphql-go/handler"
 	"github.com/sdeoras/graphql/pkg/log"
 	"github.com/sdeoras/graphql/pkg/rest/mw/auth"
 	"github.com/sdeoras/graphql/pkg/testutil/comdirutil"
-	"net/http"
 )
 
 func main() {

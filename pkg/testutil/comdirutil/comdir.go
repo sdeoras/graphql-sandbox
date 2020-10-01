@@ -2,13 +2,14 @@ package comdirutil
 
 import (
 	"fmt"
+	"math"
+	"time"
+
 	"github.com/graphql-go/graphql"
 	"github.com/sdeoras/graphql/pkg/log"
 	"github.com/sdeoras/graphql/pkg/rest/mw/auth"
 	"github.com/sdeoras/graphql/pkg/rest/mw/auth/authenticator"
 	"github.com/sdeoras/graphql/pkg/rest/mw/auth/authorizer"
-	"math"
-	"time"
 )
 
 const (

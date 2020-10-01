@@ -3,10 +3,11 @@ package auth
 import (
 	"context"
 	"fmt"
-	"github.com/graphql-go/handler"
-	"go.uber.org/zap"
 	"net/http"
 	"strings"
+
+	"github.com/graphql-go/handler"
+	"go.uber.org/zap"
 )
 
 type authHandler struct {
