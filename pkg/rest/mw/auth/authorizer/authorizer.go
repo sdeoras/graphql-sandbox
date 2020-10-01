@@ -12,13 +12,13 @@ type authorizer struct {
 	logger       *zap.Logger
 }
 
-func newAuthorizer(allowedRoles []string, logger *zap.Logger) *authorizer {
+func newAuthorizer(config *Config) *authorizer {
 	g := &authorizer{
 		allowedRoles: make(map[string]struct{}),
-		logger:       logger,
+		logger:       config.Logger,
 	}
 
-	for _, allowedRole := range allowedRoles {
+	for _, allowedRole := range config.AllowedRoles {
 		g.allowedRoles[allowedRole] = struct{}{}
 	}
 

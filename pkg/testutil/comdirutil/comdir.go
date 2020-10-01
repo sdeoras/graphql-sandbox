@@ -67,7 +67,10 @@ func init() {
 		AllowedGroups: []string{auth.GroupGoogle},
 		Logger:        log.Logger(),
 	})
-	authZ := authorizer.NewAuthorizer([]string{auth.RoleAdmin}, log.Logger())
+	authZ := authorizer.NewAuthorizer(&authorizer.Config{
+		AllowedRoles: []string{auth.RoleAdmin},
+		Logger:       log.Logger(),
+	})
 
 	request := graphql.NewInputObject(graphql.InputObjectConfig{
 		Name: "request",

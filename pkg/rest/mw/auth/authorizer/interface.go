@@ -9,6 +9,11 @@ type Authorizer interface {
 	Authorize(resolver graphql.FieldResolveFn) graphql.FieldResolveFn
 }
 
-func NewAuthorizer(allowedRoles []string, logger *zap.Logger) Authorizer {
-	return newAuthorizer(allowedRoles, logger)
+type Config struct {
+	AllowedRoles []string
+	Logger       *zap.Logger
+}
+
+func NewAuthorizer(config *Config) Authorizer {
+	return newAuthorizer(config)
 }

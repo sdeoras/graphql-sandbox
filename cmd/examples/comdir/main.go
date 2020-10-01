@@ -3,15 +3,16 @@ package main
 import (
 	"fmt"
 	"github.com/graphql-go/handler"
-	handler2 "github.com/sdeoras/graphql/pkg/rest/mw/auth/handler"
+	"github.com/sdeoras/graphql/pkg/log"
+	"github.com/sdeoras/graphql/pkg/rest/mw/auth"
 	"github.com/sdeoras/graphql/pkg/testutil/comdirutil"
 	"net/http"
 )
 
 func main() {
 	http.Handle("/",
-		handler2.New(
-			handler.New(
+		auth.NewHandler(&auth.Config{
+			Handler: handler.New(
 				&handler.Config{
 					Schema:           &comdirutil.Schema,
 					Pretty:           true,
@@ -22,11 +23,12 @@ func main() {
 					FormatErrorFn:    nil,
 				},
 			),
-			true,
-		),
+			SkipCheck: true,
+			Logger:    log.Logger(),
+		}),
 	)
 
 	fmt.Println("Now server is running on port 8081")
 	fmt.Println("Test with Get      : curl -g 'http://localhost:8081/")
-	http.ListenAndServe(":8081", nil)
+	_ = http.ListenAndServe(":8081", nil)
 }
