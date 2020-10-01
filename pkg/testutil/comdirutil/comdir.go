@@ -2,10 +2,13 @@ package comdirutil
 
 import (
 	"fmt"
+	"github.com/graphql-go/graphql"
+	"github.com/sdeoras/graphql/pkg/log"
+	"github.com/sdeoras/graphql/pkg/rest/mw/auth"
+	"github.com/sdeoras/graphql/pkg/rest/mw/auth/authenticator"
+	"github.com/sdeoras/graphql/pkg/rest/mw/auth/authorizer"
 	"math"
 	"time"
-
-	"github.com/graphql-go/graphql"
 )
 
 const (
@@ -59,6 +62,9 @@ var (
 )
 
 func init() {
+	authN := authenticator.NewAuthenticator(log.Logger())
+	authZ := authorizer.NewAuthorizer([]string{auth.RoleAdmin}, log.Logger())
+
 	request := graphql.NewInputObject(graphql.InputObjectConfig{
 		Name: "request",
 		Fields: graphql.Fields{
@@ -86,28 +92,36 @@ func init() {
 				id: &graphql.Field{
 					Type: graphql.NewNonNull(graphql.String),
 					Args: nil,
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-						switch v := p.Source.(type) {
-						case *Employee:
-							return v.ID, nil
-						default:
-							return nil, fmt.Errorf("invalid object type %T, expected *Employee", v)
-						}
-					},
+					Resolve: authN.Authenticate(
+						authZ.Authorize(
+							func(p graphql.ResolveParams) (interface{}, error) {
+								switch v := p.Source.(type) {
+								case *Employee:
+									return v.ID, nil
+								default:
+									return nil, fmt.Errorf("invalid object type %T, expected *Employee", v)
+								}
+							},
+						),
+					),
 					DeprecationReason: "",
 					Description:       "id of the employee",
 				},
 				name: &graphql.Field{
 					Type: graphql.NewNonNull(graphql.String),
 					Args: nil,
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-						switch v := p.Source.(type) {
-						case *Employee:
-							return v.Name, nil
-						default:
-							return nil, fmt.Errorf("invalid object type %T, expected *Employee", v)
-						}
-					},
+					Resolve: authN.Authenticate(
+						authZ.Authorize(
+							func(p graphql.ResolveParams) (interface{}, error) {
+								switch v := p.Source.(type) {
+								case *Employee:
+									return v.Name, nil
+								default:
+									return nil, fmt.Errorf("invalid object type %T, expected *Employee", v)
+								}
+							},
+						),
+					),
 					DeprecationReason: "",
 					Description:       "name of the employee",
 				},
@@ -115,14 +129,18 @@ func init() {
 					Name: joinDate,
 					Type: graphql.String,
 					Args: nil,
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-						switch v := p.Source.(type) {
-						case *Employee:
-							return v.JoinDate, nil
-						default:
-							return nil, fmt.Errorf("invalid object type %T, expected *Employee", v)
-						}
-					},
+					Resolve: authN.Authenticate(
+						authZ.Authorize(
+							func(p graphql.ResolveParams) (interface{}, error) {
+								switch v := p.Source.(type) {
+								case *Employee:
+									return v.JoinDate, nil
+								default:
+									return nil, fmt.Errorf("invalid object type %T, expected *Employee", v)
+								}
+							},
+						),
+					),
 					DeprecationReason: "",
 					Description:       "join date of the employee",
 				},
@@ -130,14 +148,18 @@ func init() {
 					Name: endDate,
 					Type: graphql.String,
 					Args: nil,
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-						switch v := p.Source.(type) {
-						case *Employee:
-							return v.EndDate, nil
-						default:
-							return nil, fmt.Errorf("invalid object type %T, expected *Employee", v)
-						}
-					},
+					Resolve: authN.Authenticate(
+						authZ.Authorize(
+							func(p graphql.ResolveParams) (interface{}, error) {
+								switch v := p.Source.(type) {
+								case *Employee:
+									return v.EndDate, nil
+								default:
+									return nil, fmt.Errorf("invalid object type %T, expected *Employee", v)
+								}
+							},
+						),
+					),
 					DeprecationReason: "",
 					Description:       "termination date of the employee",
 				},
@@ -145,18 +167,22 @@ func init() {
 					Name: manager,
 					Type: employeeType,
 					Args: nil,
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-						switch v := p.Source.(type) {
-						case *Employee:
-							e, ok := registry[v.Manager]
-							if !ok {
-								return nil, fmt.Errorf("manager id not found")
-							}
-							return e, nil
-						default:
-							return nil, fmt.Errorf("invalid object type %T, expected *Employee", v)
-						}
-					},
+					Resolve: authN.Authenticate(
+						authZ.Authorize(
+							func(p graphql.ResolveParams) (interface{}, error) {
+								switch v := p.Source.(type) {
+								case *Employee:
+									e, ok := registry[v.Manager]
+									if !ok {
+										return nil, fmt.Errorf("manager id not found")
+									}
+									return e, nil
+								default:
+									return nil, fmt.Errorf("invalid object type %T, expected *Employee", v)
+								}
+							},
+						),
+					),
 					DeprecationReason: "",
 					Description:       "manager of the employee",
 				},
@@ -164,22 +190,26 @@ func init() {
 					Name: manages,
 					Type: graphql.NewList(employeeType),
 					Args: nil,
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-						switch v := p.Source.(type) {
-						case *Employee:
-							var employees []*Employee
-							for _, eid := range v.Manages {
-								e, ok := registry[eid]
-								if !ok {
-									return nil, fmt.Errorf("manager id not found")
+					Resolve: authN.Authenticate(
+						authZ.Authorize(
+							func(p graphql.ResolveParams) (interface{}, error) {
+								switch v := p.Source.(type) {
+								case *Employee:
+									var employees []*Employee
+									for _, eid := range v.Manages {
+										e, ok := registry[eid]
+										if !ok {
+											return nil, fmt.Errorf("manager id not found")
+										}
+										employees = append(employees, e)
+									}
+									return employees, nil
+								default:
+									return nil, fmt.Errorf("invalid object type %T, expected *Employee", v)
 								}
-								employees = append(employees, e)
-							}
-							return employees, nil
-						default:
-							return nil, fmt.Errorf("invalid object type %T, expected *Employee", v)
-						}
-					},
+							},
+						),
+					),
 					DeprecationReason: "",
 					Description:       "list of employees this employee manages",
 				},
@@ -199,14 +229,18 @@ func init() {
 				Name: "id of the contractor",
 				Type: graphql.String,
 				Args: nil,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					switch v := p.Source.(type) {
-					case *Contractor:
-						return v.ID, nil
-					default:
-						return nil, fmt.Errorf("invalid object type %T, expected *Contractor", v)
-					}
-				},
+				Resolve: authN.Authenticate(
+					authZ.Authorize(
+						func(p graphql.ResolveParams) (interface{}, error) {
+							switch v := p.Source.(type) {
+							case *Contractor:
+								return v.ID, nil
+							default:
+								return nil, fmt.Errorf("invalid object type %T, expected *Contractor", v)
+							}
+						},
+					),
+				),
 				DeprecationReason: "",
 				Description:       "",
 			},
@@ -214,14 +248,18 @@ func init() {
 				Name: "name of the contractor",
 				Type: graphql.String,
 				Args: nil,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					switch v := p.Source.(type) {
-					case *Contractor:
-						return v.Name, nil
-					default:
-						return nil, fmt.Errorf("invalid object type %T, expected *Contractor", v)
-					}
-				},
+				Resolve: authN.Authenticate(
+					authZ.Authorize(
+						func(p graphql.ResolveParams) (interface{}, error) {
+							switch v := p.Source.(type) {
+							case *Contractor:
+								return v.Name, nil
+							default:
+								return nil, fmt.Errorf("invalid object type %T, expected *Contractor", v)
+							}
+						},
+					),
+				),
 				DeprecationReason: "",
 				Description:       "",
 			},
@@ -229,14 +267,18 @@ func init() {
 				Name: "joining date of the contractor",
 				Type: graphql.String,
 				Args: nil,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					switch v := p.Source.(type) {
-					case *Contractor:
-						return v.JoinDate, nil
-					default:
-						return nil, fmt.Errorf("invalid object type %T, expected *Contractor", v)
-					}
-				},
+				Resolve: authN.Authenticate(
+					authZ.Authorize(
+						func(p graphql.ResolveParams) (interface{}, error) {
+							switch v := p.Source.(type) {
+							case *Contractor:
+								return v.JoinDate, nil
+							default:
+								return nil, fmt.Errorf("invalid object type %T, expected *Contractor", v)
+							}
+						},
+					),
+				),
 				DeprecationReason: "",
 				Description:       "",
 			},
@@ -244,14 +286,18 @@ func init() {
 				Name: "end date of the contractor",
 				Type: graphql.String,
 				Args: nil,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					switch v := p.Source.(type) {
-					case *Contractor:
-						return v.EndDate, nil
-					default:
-						return nil, fmt.Errorf("invalid object type %T, expected *Contractor", v)
-					}
-				},
+				Resolve: authN.Authenticate(
+					authZ.Authorize(
+						func(p graphql.ResolveParams) (interface{}, error) {
+							switch v := p.Source.(type) {
+							case *Contractor:
+								return v.EndDate, nil
+							default:
+								return nil, fmt.Errorf("invalid object type %T, expected *Contractor", v)
+							}
+						},
+					),
+				),
 				DeprecationReason: "",
 				Description:       "",
 			},
@@ -259,14 +305,18 @@ func init() {
 				Name: "department of the contractor",
 				Type: graphql.String,
 				Args: nil,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					switch v := p.Source.(type) {
-					case *Contractor:
-						return v.Department, nil
-					default:
-						return nil, fmt.Errorf("invalid object type %T, expected *Contractor", v)
-					}
-				},
+				Resolve: authN.Authenticate(
+					authZ.Authorize(
+						func(p graphql.ResolveParams) (interface{}, error) {
+							switch v := p.Source.(type) {
+							case *Contractor:
+								return v.Department, nil
+							default:
+								return nil, fmt.Errorf("invalid object type %T, expected *Contractor", v)
+							}
+						},
+					),
+				),
 				DeprecationReason: "",
 				Description:       "",
 			},
