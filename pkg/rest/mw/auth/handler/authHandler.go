@@ -28,6 +28,7 @@ func (s *authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if s.skipCheck {
 		ctx = context.WithValue(ctx, auth.XAuthenticated, true)
+		ctx = context.WithValue(ctx, auth.XGroups, []string{auth.GroupGoogle})
 		ctx = context.WithValue(ctx, auth.Role, auth.RoleAdmin)
 		*r = *r.WithContext(ctx)
 		return

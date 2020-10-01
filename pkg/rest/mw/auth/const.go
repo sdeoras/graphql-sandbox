@@ -13,3 +13,7 @@ const (
 	RoleEditor     = "Editor"
 	RoleViewer     = "Viewer"
 )
+
+const (
+	GroupGoogle = "google.com"
+)

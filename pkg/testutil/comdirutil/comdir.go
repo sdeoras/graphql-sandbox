@@ -62,7 +62,11 @@ var (
 )
 
 func init() {
-	authN := authenticator.NewAuthenticator(log.Logger())
+	authN := authenticator.NewAuthenticator(&authenticator.Config{
+		AllowedUsers:  []string{},
+		AllowedGroups: []string{auth.GroupGoogle},
+		Logger:        log.Logger(),
+	})
 	authZ := authorizer.NewAuthorizer([]string{auth.RoleAdmin}, log.Logger())
 
 	request := graphql.NewInputObject(graphql.InputObjectConfig{

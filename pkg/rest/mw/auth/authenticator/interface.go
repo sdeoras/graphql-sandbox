@@ -9,6 +9,12 @@ type Authenticator interface {
 	Authenticate(resolver graphql.FieldResolveFn) graphql.FieldResolveFn
 }
 
-func NewAuthenticator(logger *zap.Logger) Authenticator {
-	return newAuthenticator(logger)
+type Config struct {
+	AllowedUsers  []string
+	AllowedGroups []string
+	Logger        *zap.Logger
+}
+
+func NewAuthenticator(config *Config) Authenticator {
+	return newAuthenticator(config)
 }
