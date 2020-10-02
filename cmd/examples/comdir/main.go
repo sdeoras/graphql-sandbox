@@ -8,24 +8,27 @@ import (
 	"github.com/sdeoras/graphql/pkg/log"
 	"github.com/sdeoras/graphql/pkg/rest/mw/auth"
 	"github.com/sdeoras/graphql/pkg/testutil/comdirutil"
+	"go.uber.org/zap/zapcore"
 )
 
 func main() {
+	log.Init(zapcore.DebugLevel)
+	comdirutil.Init()
+
 	http.Handle("/",
 		auth.NewHandler(&auth.Config{
 			Handler: handler.New(
 				&handler.Config{
 					Schema:           &comdirutil.Schema,
 					Pretty:           true,
-					GraphiQL:         true,
+					GraphiQL:         false,
 					Playground:       true,
 					RootObjectFn:     nil,
 					ResultCallbackFn: nil,
 					FormatErrorFn:    nil,
 				},
 			),
-			SkipCheck: true,
-			Logger:    log.Logger(),
+			Logger: log.Logger(),
 		}),
 	)
 

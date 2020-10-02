@@ -3,6 +3,8 @@ package comdirutil
 import (
 	"fmt"
 	"math"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/graphql-go/graphql"
@@ -21,6 +23,8 @@ const (
 	endDate    = "endDate"
 	employee   = "employee"
 	employees  = "employees"
+	login      = "login"
+	jwt        = "jwt"
 	manager    = "maanger"
 	manages    = "manages"
 	contractor = "contractor"
@@ -62,7 +66,7 @@ var (
 	personInterface *graphql.Interface
 )
 
-func init() {
+func Init() {
 	authN := authenticator.NewAuthenticator(&authenticator.Config{
 		AllowedUsers:  []string{},
 		AllowedGroups: []string{auth.GroupGoogle},
@@ -89,6 +93,30 @@ func init() {
 	})
 
 	_ = request
+
+	loginType := graphql.NewObject(graphql.ObjectConfig{
+		Name:       login,
+		Interfaces: nil,
+		Fields: graphql.Fields{
+			jwt: &graphql.Field{
+				Name: jwt,
+				Type: graphql.String,
+				Args: nil,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					token, ok := p.Source.([]byte)
+					if !ok {
+						return nil, fmt.Errorf("invalid token type")
+					}
+
+					return strings.TrimSpace(string(token)), nil
+				},
+				DeprecationReason: "",
+				Description:       "jwt ID token",
+			},
+		},
+		IsTypeOf:    nil,
+		Description: "login type",
+	})
 
 	employeeType = graphql.NewObject(graphql.ObjectConfig{
 		Name: employee,
@@ -408,6 +436,20 @@ func init() {
 		graphql.ObjectConfig{
 			Name: query,
 			Fields: graphql.Fields{
+				login: &graphql.Field{
+					Name: login,
+					Type: loginType,
+					Args: nil,
+					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+						return exec.Command(
+							"gcloud",
+							"auth",
+							"print-identity-token",
+						).Output()
+					},
+					DeprecationReason: "",
+					Description:       "login and get JWT token",
+				},
 				employee: &graphql.Field{
 					Name: employee,
 					Type: employeeType,
@@ -418,18 +460,22 @@ func init() {
 							Description:  "id of the employee to fetch",
 						},
 					},
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-						eid, ok := p.Args[id].(string)
-						if !ok {
-							return nil, fmt.Errorf("invalid id type")
-						}
-						e, ok := registry[eid]
-						if !ok {
-							return nil, fmt.Errorf("manager id not found")
-						}
+					Resolve: authN.Authenticate(
+						authZ.Authorize(
+							func(p graphql.ResolveParams) (interface{}, error) {
+								eid, ok := p.Args[id].(string)
+								if !ok {
+									return nil, fmt.Errorf("invalid id type")
+								}
+								e, ok := registry[eid]
+								if !ok {
+									return nil, fmt.Errorf("manager id not found")
+								}
 
-						return e, nil
-					},
+								return e, nil
+							},
+						),
+					),
 					DeprecationReason: "",
 					Description:       "fetch employee info based on id",
 				},
@@ -443,23 +489,27 @@ func init() {
 							Description:  "count how many (up to)",
 						},
 					},
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-						n := math.MaxInt32
-						if m, ok := p.Args[count].(int); ok && m < n {
-							n = m
-						}
+					Resolve: authN.Authenticate(
+						authZ.Authorize(
+							func(p graphql.ResolveParams) (interface{}, error) {
+								n := math.MaxInt32
+								if m, ok := p.Args[count].(int); ok && m < n {
+									n = m
+								}
 
-						var e []*Employee
-						for _, v := range registry {
-							if len(e) >= n {
-								break
-							}
-							v := v
-							e = append(e, v)
-						}
+								var e []*Employee
+								for _, v := range registry {
+									if len(e) >= n {
+										break
+									}
+									v := v
+									e = append(e, v)
+								}
 
-						return e, nil
-					},
+								return e, nil
+							},
+						),
+					),
 					DeprecationReason: "",
 					Description:       "list all employees",
 				},

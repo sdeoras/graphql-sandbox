@@ -11,51 +11,42 @@ import (
 )
 
 type authHandler struct {
-	skipCheck bool
-	handler   *handler.Handler
-	logger    *zap.Logger
+	handler *handler.Handler
+	logger  *zap.Logger
 }
 
 type Config struct {
-	Handler   *handler.Handler
-	SkipCheck bool
-	Logger    *zap.Logger
+	Handler *handler.Handler
+	Logger  *zap.Logger
 }
 
 func NewHandler(config *Config) http.Handler {
 	return &authHandler{
-		handler:   config.Handler,
-		skipCheck: config.SkipCheck,
-		logger:    config.Logger,
+		handler: config.Handler,
+		logger:  config.Logger,
 	}
 }
 
 func (s *authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
 	defer s.handler.ServeHTTP(w, r)
 
-	if s.skipCheck {
-		ctx = context.WithValue(ctx, XAuthenticated, true)
-		ctx = context.WithValue(ctx, XGroups, []string{GroupGoogle})
-		ctx = context.WithValue(ctx, Role, RoleAdmin)
-		*r = *r.WithContext(ctx)
-		return
-	}
-
+	ctx := r.Context()
 	token := r.Header.Get(Authorization)
+	s.logger.Debug("token", zap.String(Authorization, token))
 
-	jwt, err := getJwt(token)
-	if err != nil {
-		http.Error(w, "invalid token", http.StatusUnauthorized)
-		return
+	if jwt, err := getJwt(token); err == nil {
+		s.logger.Debug("jwt", zap.String(XJwtToken, jwt))
+		ctx = context.WithValue(ctx, Authorization, token)
+		ctx = context.WithValue(ctx, XJwtToken, jwt)
+		ctx = context.WithValue(ctx, XAuthenticated, true)
+		ctx = context.WithValue(ctx, XGroups, []string{GroupGoogle}) // todo: decode from JWT
+		ctx = context.WithValue(ctx, Role, RoleAdmin)                // todo
+		*r = *r.WithContext(ctx)
+	} else {
+		s.logger.Error("failed to get JWT token", zap.String("error", err.Error()))
+		ctx = context.WithValue(ctx, XAuthenticated, false)
+		*r = *r.WithContext(ctx)
 	}
-
-	ctx = context.WithValue(ctx, Authorization, token)
-	ctx = context.WithValue(ctx, XJwtToken, jwt)
-	ctx = context.WithValue(ctx, XAuthenticated, true)
-
-	*r = *r.WithContext(ctx)
 }
 
 func getJwt(token string) (string, error) {
@@ -64,7 +55,7 @@ func getJwt(token string) (string, error) {
 		return "", fmt.Errorf("invalid token format")
 	}
 
-	if strings.ToLower(parts[0]) != Bearer {
+	if strings.ToLower(parts[0]) != strings.ToLower(Bearer) {
 		return "", fmt.Errorf("not a Bearer token")
 	}
 

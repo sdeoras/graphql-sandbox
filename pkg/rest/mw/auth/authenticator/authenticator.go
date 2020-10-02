@@ -36,6 +36,7 @@ func (s *authenticator) Authenticate(resolver graphql.FieldResolveFn) graphql.Fi
 	return func(p graphql.ResolveParams) (interface{}, error) {
 		authenticated, ok := p.Context.Value(auth.XAuthenticated).(bool)
 		if !ok || !authenticated {
+			s.logger.Error("not authenticated, possibly invalid, stale or incorrectly signed JWT token")
 			return nil, fmt.Errorf("not authenticated")
 		}
 
@@ -61,6 +62,7 @@ func (s *authenticator) Authenticate(resolver graphql.FieldResolveFn) graphql.Fi
 			return resolver(p)
 		}
 
+		s.logger.Error("invalid user or group membership")
 		return nil, fmt.Errorf("not authenticated")
 	}
 }
