@@ -40,7 +40,7 @@ func (s *authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ctx = context.WithValue(ctx, XJwtToken, jwt)
 		ctx = context.WithValue(ctx, XAuthenticated, true)
 		ctx = context.WithValue(ctx, XGroups, []string{GroupGoogle}) // todo: decode from JWT
-		ctx = context.WithValue(ctx, Role, RoleAdmin)                // todo
+		ctx = context.WithValue(ctx, Role, RoleViewer)               // todo
 		*r = *r.WithContext(ctx)
 	} else {
 		s.logger.Error("failed to get JWT token", zap.String("error", err.Error()))

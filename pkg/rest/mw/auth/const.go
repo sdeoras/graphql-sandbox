@@ -15,5 +15,13 @@ const (
 )
 
 const (
+	PermRead   = "read"
+	PermWrite  = "write"
+	PermUpdate = "update"
+	PermDelete = "delete"
+	PermList   = "list"
+)
+
+const (
 	GroupGoogle = "google.com"
 )

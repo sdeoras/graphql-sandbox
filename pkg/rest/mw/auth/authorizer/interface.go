@@ -10,8 +10,8 @@ type Authorizer interface {
 }
 
 type Config struct {
-	AllowedRoles []string
-	Logger       *zap.Logger
+	Permission string
+	Logger     *zap.Logger
 }
 
 func NewAuthorizer(config *Config) Authorizer {

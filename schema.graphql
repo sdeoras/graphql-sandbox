@@ -1,0 +1,61 @@
+schema {
+  query: query
+  mutation: mutation
+}
+
+#
+type mutation {
+  # create or update employee
+  employee(
+    # id of the employee to update
+    id: String!
+
+    # name of the employee
+    name: String
+  ): employee
+}
+
+#
+type query {
+  # fetch employee info based on id
+  employee(
+    # id of the employee to fetch
+    id: String
+  ): employee
+
+  # list all employees
+  employees(
+    # count how many (up to)
+    count: Int
+  ): [employee]
+
+  # login and get JWT token
+  login: login
+}
+
+# login type
+type login {
+  # jwt ID token
+  jwt: String
+}
+
+# type def for employee
+type employee {
+  # termination date of the employee
+  endDate: String
+
+  # id of the employee
+  id: String!
+
+  # join date of the employee
+  joinDate: String
+
+  # manager of the employee
+  maanger: employee
+
+  # list of employees this employee manages
+  manages: [employee]
+
+  # name of the employee
+  name: String!
+}

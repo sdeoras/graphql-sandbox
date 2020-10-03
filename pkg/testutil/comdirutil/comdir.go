@@ -16,6 +16,7 @@ import (
 
 const (
 	query      = "query"
+	mutation   = "mutation"
 	count      = "count"
 	id         = "id"
 	name       = "name"
@@ -67,14 +68,18 @@ var (
 )
 
 func Init() {
-	authN := authenticator.NewAuthenticator(&authenticator.Config{
+	groupAuthenticator := authenticator.NewAuthenticator(&authenticator.Config{
 		AllowedUsers:  []string{},
 		AllowedGroups: []string{auth.GroupGoogle},
 		Logger:        log.Logger(),
 	})
-	authZ := authorizer.NewAuthorizer(&authorizer.Config{
-		AllowedRoles: []string{auth.RoleAdmin},
-		Logger:       log.Logger(),
+	readAuthorizer := authorizer.NewAuthorizer(&authorizer.Config{
+		Permission: auth.PermRead,
+		Logger:     log.Logger(),
+	})
+	writeAuthorizer := authorizer.NewAuthorizer(&authorizer.Config{
+		Permission: auth.PermWrite,
+		Logger:     log.Logger(),
 	})
 
 	request := graphql.NewInputObject(graphql.InputObjectConfig{
@@ -128,8 +133,8 @@ func Init() {
 				id: &graphql.Field{
 					Type: graphql.NewNonNull(graphql.String),
 					Args: nil,
-					Resolve: authN.Authenticate(
-						authZ.Authorize(
+					Resolve: groupAuthenticator.Authenticate(
+						readAuthorizer.Authorize(
 							func(p graphql.ResolveParams) (interface{}, error) {
 								switch v := p.Source.(type) {
 								case *Employee:
@@ -146,8 +151,8 @@ func Init() {
 				name: &graphql.Field{
 					Type: graphql.NewNonNull(graphql.String),
 					Args: nil,
-					Resolve: authN.Authenticate(
-						authZ.Authorize(
+					Resolve: groupAuthenticator.Authenticate(
+						readAuthorizer.Authorize(
 							func(p graphql.ResolveParams) (interface{}, error) {
 								switch v := p.Source.(type) {
 								case *Employee:
@@ -165,8 +170,8 @@ func Init() {
 					Name: joinDate,
 					Type: graphql.String,
 					Args: nil,
-					Resolve: authN.Authenticate(
-						authZ.Authorize(
+					Resolve: groupAuthenticator.Authenticate(
+						readAuthorizer.Authorize(
 							func(p graphql.ResolveParams) (interface{}, error) {
 								switch v := p.Source.(type) {
 								case *Employee:
@@ -184,8 +189,8 @@ func Init() {
 					Name: endDate,
 					Type: graphql.String,
 					Args: nil,
-					Resolve: authN.Authenticate(
-						authZ.Authorize(
+					Resolve: groupAuthenticator.Authenticate(
+						readAuthorizer.Authorize(
 							func(p graphql.ResolveParams) (interface{}, error) {
 								switch v := p.Source.(type) {
 								case *Employee:
@@ -203,8 +208,8 @@ func Init() {
 					Name: manager,
 					Type: employeeType,
 					Args: nil,
-					Resolve: authN.Authenticate(
-						authZ.Authorize(
+					Resolve: groupAuthenticator.Authenticate(
+						readAuthorizer.Authorize(
 							func(p graphql.ResolveParams) (interface{}, error) {
 								switch v := p.Source.(type) {
 								case *Employee:
@@ -226,8 +231,8 @@ func Init() {
 					Name: manages,
 					Type: graphql.NewList(employeeType),
 					Args: nil,
-					Resolve: authN.Authenticate(
-						authZ.Authorize(
+					Resolve: groupAuthenticator.Authenticate(
+						readAuthorizer.Authorize(
 							func(p graphql.ResolveParams) (interface{}, error) {
 								switch v := p.Source.(type) {
 								case *Employee:
@@ -265,8 +270,8 @@ func Init() {
 				Name: "id of the contractor",
 				Type: graphql.String,
 				Args: nil,
-				Resolve: authN.Authenticate(
-					authZ.Authorize(
+				Resolve: groupAuthenticator.Authenticate(
+					readAuthorizer.Authorize(
 						func(p graphql.ResolveParams) (interface{}, error) {
 							switch v := p.Source.(type) {
 							case *Contractor:
@@ -284,8 +289,8 @@ func Init() {
 				Name: "name of the contractor",
 				Type: graphql.String,
 				Args: nil,
-				Resolve: authN.Authenticate(
-					authZ.Authorize(
+				Resolve: groupAuthenticator.Authenticate(
+					readAuthorizer.Authorize(
 						func(p graphql.ResolveParams) (interface{}, error) {
 							switch v := p.Source.(type) {
 							case *Contractor:
@@ -303,8 +308,8 @@ func Init() {
 				Name: "joining date of the contractor",
 				Type: graphql.String,
 				Args: nil,
-				Resolve: authN.Authenticate(
-					authZ.Authorize(
+				Resolve: groupAuthenticator.Authenticate(
+					readAuthorizer.Authorize(
 						func(p graphql.ResolveParams) (interface{}, error) {
 							switch v := p.Source.(type) {
 							case *Contractor:
@@ -322,8 +327,8 @@ func Init() {
 				Name: "end date of the contractor",
 				Type: graphql.String,
 				Args: nil,
-				Resolve: authN.Authenticate(
-					authZ.Authorize(
+				Resolve: groupAuthenticator.Authenticate(
+					readAuthorizer.Authorize(
 						func(p graphql.ResolveParams) (interface{}, error) {
 							switch v := p.Source.(type) {
 							case *Contractor:
@@ -341,8 +346,8 @@ func Init() {
 				Name: "department of the contractor",
 				Type: graphql.String,
 				Args: nil,
-				Resolve: authN.Authenticate(
-					authZ.Authorize(
+				Resolve: groupAuthenticator.Authenticate(
+					readAuthorizer.Authorize(
 						func(p graphql.ResolveParams) (interface{}, error) {
 							switch v := p.Source.(type) {
 							case *Contractor:
@@ -460,8 +465,8 @@ func Init() {
 							Description:  "id of the employee to fetch",
 						},
 					},
-					Resolve: authN.Authenticate(
-						authZ.Authorize(
+					Resolve: groupAuthenticator.Authenticate(
+						readAuthorizer.Authorize(
 							func(p graphql.ResolveParams) (interface{}, error) {
 								eid, ok := p.Args[id].(string)
 								if !ok {
@@ -489,8 +494,8 @@ func Init() {
 							Description:  "count how many (up to)",
 						},
 					},
-					Resolve: authN.Authenticate(
-						authZ.Authorize(
+					Resolve: groupAuthenticator.Authenticate(
+						readAuthorizer.Authorize(
 							func(p graphql.ResolveParams) (interface{}, error) {
 								n := math.MaxInt32
 								if m, ok := p.Args[count].(int); ok && m < n {
@@ -516,7 +521,57 @@ func Init() {
 			},
 		},
 	)
+
+	mutationType := graphql.NewObject(graphql.ObjectConfig{
+		Name:       mutation,
+		Interfaces: nil,
+		Fields: graphql.Fields{
+			employee: &graphql.Field{
+				Name: employee,
+				Type: employeeType,
+				Args: graphql.FieldConfigArgument{
+					id: &graphql.ArgumentConfig{
+						Type:         graphql.NewNonNull(graphql.String),
+						DefaultValue: nil,
+						Description:  "id of the employee to update",
+					},
+					name: &graphql.ArgumentConfig{
+						Type:         graphql.String,
+						DefaultValue: nil,
+						Description:  "name of the employee",
+					},
+				},
+				Resolve: groupAuthenticator.Authenticate(
+					writeAuthorizer.Authorize(
+						func(p graphql.ResolveParams) (interface{}, error) {
+							eid, ok := p.Args[id].(string)
+							if !ok {
+								return nil, fmt.Errorf("invalid id type")
+							}
+							e, ok := registry[eid]
+							if !ok {
+								return nil, fmt.Errorf("employee id not found")
+							}
+
+							if name, ok := p.Args[name].(string); ok && len(name) > 0 {
+								e.Name = name
+							}
+
+							registry[eid] = e
+
+							return e, nil
+						},
+					),
+				),
+				DeprecationReason: "",
+				Description:       "create or update employee",
+			},
+		},
+		IsTypeOf:    nil,
+		Description: "",
+	})
 	Schema, _ = graphql.NewSchema(graphql.SchemaConfig{
-		Query: queryType,
+		Query:    queryType,
+		Mutation: mutationType,
 	})
 }

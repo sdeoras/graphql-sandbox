@@ -2,25 +2,50 @@ package authorizer
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/graphql-go/graphql"
 	"github.com/sdeoras/graphql/pkg/rest/mw/auth"
 	"go.uber.org/zap"
 )
 
+var rbac = map[string]map[string]map[string]struct{}{
+	auth.RoleAdmin: {
+		"*": auth.Permissions(
+			auth.PermRead,
+			auth.PermWrite,
+			auth.PermUpdate,
+			auth.PermDelete,
+			auth.PermList,
+		),
+	},
+	auth.RoleEditor: {
+		"*": auth.Permissions(
+			auth.PermRead,
+			auth.PermWrite,
+			auth.PermUpdate,
+			auth.PermDelete,
+			auth.PermList,
+		),
+	},
+	auth.RoleViewer: {
+		"*": auth.Permissions(
+			auth.PermRead,
+			auth.PermList,
+		),
+	},
+}
+
 type authorizer struct {
-	allowedRoles map[string]struct{}
-	logger       *zap.Logger
+	permission string
+	logger     *zap.Logger
 }
 
 func newAuthorizer(config *Config) *authorizer {
 	g := &authorizer{
-		allowedRoles: make(map[string]struct{}),
-		logger:       config.Logger,
-	}
-
-	for _, allowedRole := range config.AllowedRoles {
-		g.allowedRoles[allowedRole] = struct{}{}
+		permission: config.Permission,
+		logger:     config.Logger,
 	}
 
 	return g
@@ -32,10 +57,30 @@ func (g *authorizer) Authorize(resolver graphql.FieldResolveFn) graphql.FieldRes
 		if !ok {
 			return nil, fmt.Errorf("no valid role for the user")
 		}
-		if _, ok := g.allowedRoles[role]; !ok {
-			return nil, fmt.Errorf("you don't have permission to access this field")
+
+		paramPath := getParamPath(p.Info.Path.AsArray())
+
+		rbacForRole, ok := rbac[role]
+		if !ok {
+			return nil, fmt.Errorf("your role does not have permissions")
 		}
 
-		return resolver(p)
+		for pathRegExp, permissions := range rbacForRole {
+			if matched, err := filepath.Match(pathRegExp, paramPath); err == nil && matched {
+				if _, ok := permissions[g.permission]; ok {
+					return resolver(p)
+				}
+			}
+		}
+
+		return nil, fmt.Errorf("you don't have permission to access this field")
 	}
+}
+
+func getParamPath(args []interface{}) string {
+	var out []string
+	for _, arg := range args {
+		out = append(out, fmt.Sprintf("%s", arg))
+	}
+	return strings.Join(out, ".")
 }
