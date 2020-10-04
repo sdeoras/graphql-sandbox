@@ -3,7 +3,6 @@ package comdirutil
 import (
 	"fmt"
 	"math"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -25,6 +24,8 @@ const (
 	employee   = "employee"
 	employees  = "employees"
 	login      = "login"
+	username   = "username"
+	password   = "password"
 	jwt        = "jwt"
 	manager    = "maanger"
 	manages    = "manages"
@@ -70,7 +71,7 @@ var (
 func Init() {
 	groupAuthenticator := authenticator.NewAuthenticator(&authenticator.Config{
 		AllowedUsers:  []string{},
-		AllowedGroups: []string{auth.GroupGoogle},
+		AllowedGroups: []string{auth.GroupGoogle, auth.GroupApple},
 		Logger:        log.Logger(),
 	})
 	readAuthorizer := authorizer.NewAuthorizer(&authorizer.Config{
@@ -444,13 +445,36 @@ func Init() {
 				login: &graphql.Field{
 					Name: login,
 					Type: loginType,
-					Args: nil,
+					Args: graphql.FieldConfigArgument{
+						username: &graphql.ArgumentConfig{
+							Type:         graphql.NewNonNull(graphql.String),
+							DefaultValue: nil,
+							Description:  "username",
+						},
+						password: &graphql.ArgumentConfig{
+							Type:         graphql.NewNonNull(graphql.String),
+							DefaultValue: nil,
+							Description:  "password",
+						},
+					},
 					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-						return exec.Command(
-							"gcloud",
-							"auth",
-							"print-identity-token",
-						).Output()
+						u, ok := p.Args[username].(string)
+						if !ok {
+							return nil, fmt.Errorf("username needs to be provided")
+						}
+
+						if _, ok := p.Args[password].(string); !ok {
+							return nil, fmt.Errorf("password needs to be provided")
+						}
+
+						switch u {
+						case "jon.doe@google.com":
+							return []byte("eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsInBhZCI6Ii4uLi4uIn0K.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiZW1haWwiOiJqb2huLmRvZUBnb29nbGUuY29tIn0K.-SK5uwI3qeDQilqAEqwzRpb6aE5uWpgcWTPoXb4LC6sZuB20e0NfSmYKjQNMnRrfWckKOg-gnNUMI0FSrUB5sw"), nil
+						case "alice.dee@apple.com":
+							return []byte("eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsInBhZCI6Ii4uLi4uIn0K.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFsaWNlIERlZSIsImVtYWlsIjoiYWxpY2UuZGVlQGFwcGxlLmNvbSJ9Cg==.esAGhPqy9bjsH5IBAY9OBR_BpxWhlgLxHbB-1e9EV3U8KyRrFt5jFngkAqTPQcBwVDd-OJHFeBIeKyatFXxmaw"), nil
+						default:
+							return nil, fmt.Errorf("invalid username")
+						}
 					},
 					DeprecationReason: "",
 					Description:       "login and get JWT token",

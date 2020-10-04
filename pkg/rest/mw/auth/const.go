@@ -24,4 +24,5 @@ const (
 
 const (
 	GroupGoogle = "google.com"
+	GroupApple  = "apple.com"
 )
